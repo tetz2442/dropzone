@@ -1308,7 +1308,7 @@
         headerValue = headers[headerName];
         xhr.setRequestHeader(headerName, headerValue);
       }
-      if (this.element.options.useFormData) {
+      if (this.options.useFormData) {
         formData = new FormData();
         if (this.options.params) {
           _ref1 = this.options.params;

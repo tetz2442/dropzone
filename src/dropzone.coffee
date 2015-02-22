@@ -1183,7 +1183,7 @@ class Dropzone extends Emitter
 
     xhr.setRequestHeader headerName, headerValue for headerName, headerValue of headers
 
-    if @element.options.useFormData
+    if @options.useFormData
       formData = new FormData()
 
       # Adding all @options parameters
