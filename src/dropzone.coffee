@@ -139,6 +139,10 @@ class Dropzone extends Emitter
     thumbnailWidth: 120
     thumbnailHeight: 120
 
+    # Choose whether to use the form data api
+    # Issue with s3 receiving form data
+    useFormData: true
+
     # The base that is used to calculate the filesize. You can change this to
     # 1024 if you would rather display kibibytes, mebibytes, etc...
     filesizeBase: 1000
@@ -1179,35 +1183,40 @@ class Dropzone extends Emitter
 
     xhr.setRequestHeader headerName, headerValue for headerName, headerValue of headers
 
-    formData = new FormData()
+    if @element.options.useFormData
+      formData = new FormData()
 
-    # Adding all @options parameters
-    formData.append key, value for key, value of @options.params if @options.params
+      # Adding all @options parameters
+      formData.append key, value for key, value of @options.params if @options.params
 
-    # Let the user add additional data if necessary
-    @emit "sending", file, xhr, formData for file in files
-    @emit "sendingmultiple", files, xhr, formData if @options.uploadMultiple
+      # Let the user add additional data if necessary
+      @emit "sending", file, xhr, formData for file in files
+      @emit "sendingmultiple", files, xhr, formData if @options.uploadMultiple
+
+      # Take care of other input elements
+      if @element.tagName == "FORM"
+        for input in @element.querySelectorAll "input, textarea, select, button"
+          inputName = input.getAttribute "name"
+          inputType = input.getAttribute "type"
+
+          if input.tagName == "SELECT" and input.hasAttribute "multiple"
+            # Possibly multiple values
+            formData.append inputName, option.value for option in input.options when option.selected
+          else if !inputType or (inputType.toLowerCase() not in [ "checkbox", "radio" ]) or input.checked
+            formData.append inputName, input.value
 
 
-    # Take care of other input elements
-    if @element.tagName == "FORM"
-      for input in @element.querySelectorAll "input, textarea, select, button"
-        inputName = input.getAttribute "name"
-        inputType = input.getAttribute "type"
+      # Finally add the file
+      # Has to be last because some servers (eg: S3) expect the file to be the
+      # last parameter
+      formData.append @_getParamName(i), files[i], files[i].name for i in [0..files.length-1]
 
-        if input.tagName == "SELECT" and input.hasAttribute "multiple"
-          # Possibly multiple values
-          formData.append inputName, option.value for option in input.options when option.selected
-        else if !inputType or (inputType.toLowerCase() not in [ "checkbox", "radio" ]) or input.checked
-          formData.append inputName, input.value
+      xhr.send formData
+    else
+      xhr.send files[0]
 
-
-    # Finally add the file
-    # Has to be last because some servers (eg: S3) expect the file to be the
-    # last parameter
-    formData.append @_getParamName(i), files[i], files[i].name for i in [0..files.length-1]
-
-    xhr.send formData
+      if files.length > 1
+        @uploadFiles files.splice(1)
 
 
   # Called internally when processing is finished.

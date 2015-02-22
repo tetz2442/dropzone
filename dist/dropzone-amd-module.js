@@ -137,6 +137,7 @@
       maxThumbnailFilesize: 10,
       thumbnailWidth: 120,
       thumbnailHeight: 120,
+      useFormData: true,
       filesizeBase: 1000,
       maxFiles: null,
       filesizeBase: 1000,
@@ -1319,44 +1320,51 @@
         headerValue = headers[headerName];
         xhr.setRequestHeader(headerName, headerValue);
       }
-      formData = new FormData();
-      if (this.options.params) {
-        _ref1 = this.options.params;
-        for (key in _ref1) {
-          value = _ref1[key];
-          formData.append(key, value);
-        }
-      }
-      for (_j = 0, _len1 = files.length; _j < _len1; _j++) {
-        file = files[_j];
-        this.emit("sending", file, xhr, formData);
-      }
-      if (this.options.uploadMultiple) {
-        this.emit("sendingmultiple", files, xhr, formData);
-      }
-      if (this.element.tagName === "FORM") {
-        _ref2 = this.element.querySelectorAll("input, textarea, select, button");
-        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-          input = _ref2[_k];
-          inputName = input.getAttribute("name");
-          inputType = input.getAttribute("type");
-          if (input.tagName === "SELECT" && input.hasAttribute("multiple")) {
-            _ref3 = input.options;
-            for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-              option = _ref3[_l];
-              if (option.selected) {
-                formData.append(inputName, option.value);
-              }
-            }
-          } else if (!inputType || ((_ref4 = inputType.toLowerCase()) !== "checkbox" && _ref4 !== "radio") || input.checked) {
-            formData.append(inputName, input.value);
+      if (this.element.options.useFormData) {
+        formData = new FormData();
+        if (this.options.params) {
+          _ref1 = this.options.params;
+          for (key in _ref1) {
+            value = _ref1[key];
+            formData.append(key, value);
           }
         }
+        for (_j = 0, _len1 = files.length; _j < _len1; _j++) {
+          file = files[_j];
+          this.emit("sending", file, xhr, formData);
+        }
+        if (this.options.uploadMultiple) {
+          this.emit("sendingmultiple", files, xhr, formData);
+        }
+        if (this.element.tagName === "FORM") {
+          _ref2 = this.element.querySelectorAll("input, textarea, select, button");
+          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+            input = _ref2[_k];
+            inputName = input.getAttribute("name");
+            inputType = input.getAttribute("type");
+            if (input.tagName === "SELECT" && input.hasAttribute("multiple")) {
+              _ref3 = input.options;
+              for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+                option = _ref3[_l];
+                if (option.selected) {
+                  formData.append(inputName, option.value);
+                }
+              }
+            } else if (!inputType || ((_ref4 = inputType.toLowerCase()) !== "checkbox" && _ref4 !== "radio") || input.checked) {
+              formData.append(inputName, input.value);
+            }
+          }
+        }
+        for (i = _m = 0, _ref5 = files.length - 1; 0 <= _ref5 ? _m <= _ref5 : _m >= _ref5; i = 0 <= _ref5 ? ++_m : --_m) {
+          formData.append(this._getParamName(i), files[i], files[i].name);
+        }
+        return xhr.send(formData);
+      } else {
+        xhr.send(files[0]);
+        if (files.length > 1) {
+          return this.uploadFiles(files.splice(1));
+        }
       }
-      for (i = _m = 0, _ref5 = files.length - 1; 0 <= _ref5 ? _m <= _ref5 : _m >= _ref5; i = 0 <= _ref5 ? ++_m : --_m) {
-        formData.append(this._getParamName(i), files[i], files[i].name);
-      }
-      return xhr.send(formData);
     };
 
     Dropzone.prototype._finished = function(files, responseText, e) {
